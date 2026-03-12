@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automation Logs</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-color: #f8fafc;
+            --border-color: rgba(255, 255, 255, 0.1);
+            
+            --success: #10b981;
+            --info: #3b82f6;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,0.2) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,0.2) 0, transparent 50%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input, select, button {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+        }
+
+        input { flex-grow: 1; }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-bottom: 1rem;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        th {
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+
+        tr {
+            transition: background-color 0.2s;
+        }
+
+        tr:hover {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        .level-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .level-INFO { background: rgba(59, 130, 246, 0.1); color: var(--info); border: 1px solid rgba(59, 130, 246, 0.2); }
+        .level-SUCCESS { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .level-WARNING { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .level-ERROR { background: rgba(239, 68, 68, 0.1); color: var(--error); border: 1px solid rgba(239, 68, 68, 0.2); }
+
+        .time { color: #94a3b8; font-family: monospace; }
+        .script-name { color: #cbd5e1; font-weight: 500; }
+        .message { color: #f1f5f9; }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Central Automation Logs</h1>
+        
+        <div class="glass-panel">
+            <div class="toolbar">
+                <input type="text" id="searchInput" placeholder="Search logs..." onkeyup="filterLogs()">
+                <select id="levelFilter" onchange="filterLogs()">
+                    <option value="">All Levels</option>
+                    <option value="INFO">Info</option>
+                    <option value="SUCCESS">Success</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="ERROR">Error</option>
+                </select>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table id="logsTable">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Level</th>
+                            <th>Script</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsBody">
+                        <!-- LOGS_INJECTED_HERE -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="emptyState" class="empty-state" style="display: none;">
+                No logs found matching your criteria.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Log data injected via Python
+        const logs = [{"timestamp": "2026-03-11T19:52:52.170639", "level": "INFO", "script": "scrape_reddit", "message": "Started scrape_reddit execution."}, {"timestamp": "2026-03-11T19:52:52.171220", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/n8n..."}, {"timestamp": "2026-03-11T19:52:54.357468", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/n8n. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T19:52:54.358226", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/automation..."}, {"timestamp": "2026-03-11T19:52:56.903207", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/automation. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T19:52:56.904634", "level": "SUCCESS", "script": "scrape_reddit", "message": "Execution complete. Results successfully saved to .tmp\\top_reddit_posts.md"}, {"timestamp": "2026-03-11T19:57:11.775034", "level": "INFO", "script": "scrape_reddit", "message": "Started scrape_reddit execution."}, {"timestamp": "2026-03-11T19:57:11.775515", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/n8n..."}, {"timestamp": "2026-03-11T19:57:13.993889", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/n8n. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T19:57:13.994681", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/automation..."}, {"timestamp": "2026-03-11T19:57:16.557248", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/automation. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T19:57:16.560661", "level": "SUCCESS", "script": "scrape_reddit", "message": "Execution complete. Results successfully saved to .tmp\\top_reddit_posts.md and .tmp\\top_reddit_posts.json"}, {"timestamp": "2026-03-11T19:58:09.374268", "level": "INFO", "script": "scrape_reddit", "message": "Started scrape_reddit execution."}, {"timestamp": "2026-03-11T19:58:09.374685", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/n8n..."}, {"timestamp": "2026-03-11T19:58:11.572464", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/n8n. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T19:58:11.573071", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/automation..."}, {"timestamp": "2026-03-11T19:58:14.296552", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/automation. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T19:58:14.299685", "level": "SUCCESS", "script": "scrape_reddit", "message": "Execution complete. Results successfully saved to .tmp\\top_reddit_posts.md and .tmp\\top_reddit_posts.json"}, {"timestamp": "2026-03-11T20:04:40.740343", "level": "INFO", "script": "scrape_reddit", "message": "Started scrape_reddit execution."}, {"timestamp": "2026-03-11T20:04:40.740812", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/n8n..."}, {"timestamp": "2026-03-11T20:04:43.010624", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/n8n. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T20:04:43.011255", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/automation..."}, {"timestamp": "2026-03-11T20:04:45.902073", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/automation. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T20:04:45.905312", "level": "SUCCESS", "script": "scrape_reddit", "message": "Execution complete. Results successfully saved to .tmp\\top_reddit_posts.md and .tmp\\top_reddit_posts.json"}, {"timestamp": "2026-03-11T20:30:35.888715", "level": "INFO", "script": "scrape_reddit", "message": "Started scrape_reddit execution."}, {"timestamp": "2026-03-11T20:30:35.889806", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/n8n..."}, {"timestamp": "2026-03-11T20:30:37.935583", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/n8n. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T20:30:37.936372", "level": "INFO", "script": "scrape_reddit", "message": "Fetching real author avatars for top 5 posts in r/n8n..."}, {"timestamp": "2026-03-11T20:30:47.415083", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/automation..."}, {"timestamp": "2026-03-11T20:30:49.920553", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/automation. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T20:30:49.921175", "level": "INFO", "script": "scrape_reddit", "message": "Fetching real author avatars for top 5 posts in r/automation..."}, {"timestamp": "2026-03-11T20:30:59.359829", "level": "SUCCESS", "script": "scrape_reddit", "message": "Execution complete. Results successfully saved to .tmp\\top_reddit_posts.md and .tmp\\top_reddit_posts.json"}, {"timestamp": "2026-03-11T20:31:02.205611", "level": "INFO", "script": "scrape_reddit", "message": "Started scrape_reddit execution."}, {"timestamp": "2026-03-11T20:31:02.206085", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/n8n..."}, {"timestamp": "2026-03-11T20:31:04.610841", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/n8n. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T20:31:04.611549", "level": "INFO", "script": "scrape_reddit", "message": "Fetching real author avatars for top 5 posts in r/n8n..."}, {"timestamp": "2026-03-11T20:31:14.077931", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/automation..."}, {"timestamp": "2026-03-11T20:31:16.680012", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/automation. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T20:31:16.680585", "level": "INFO", "script": "scrape_reddit", "message": "Fetching real author avatars for top 5 posts in r/automation..."}, {"timestamp": "2026-03-11T20:31:26.351784", "level": "SUCCESS", "script": "scrape_reddit", "message": "Execution complete. Results successfully saved to .tmp\\top_reddit_posts.md and .tmp\\top_reddit_posts.json"}, {"timestamp": "2026-03-11T20:49:38.156678", "level": "INFO", "script": "scrape_reddit", "message": "Started scrape_reddit execution."}, {"timestamp": "2026-03-11T20:49:38.157275", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/n8n..."}, {"timestamp": "2026-03-11T20:49:40.234328", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/n8n. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T20:49:40.234885", "level": "INFO", "script": "scrape_reddit", "message": "Fetching real author avatars for top 5 posts in r/n8n..."}, {"timestamp": "2026-03-11T20:49:49.570131", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/automation..."}, {"timestamp": "2026-03-11T20:49:51.704865", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/automation. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T20:49:51.705474", "level": "INFO", "script": "scrape_reddit", "message": "Fetching real author avatars for top 5 posts in r/automation..."}, {"timestamp": "2026-03-11T20:50:01.031421", "level": "SUCCESS", "script": "scrape_reddit", "message": "Execution complete. Results successfully saved to .tmp\\top_reddit_posts.md and .tmp\\top_reddit_posts.json"}, {"timestamp": "2026-03-11T21:33:21.941847", "level": "INFO", "script": "scrape_reddit", "message": "Started scrape_reddit execution."}, {"timestamp": "2026-03-11T21:33:21.942282", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/n8n..."}, {"timestamp": "2026-03-11T21:33:23.855109", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/n8n. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T21:33:23.855829", "level": "INFO", "script": "scrape_reddit", "message": "Fetching real author avatars for top 5 posts in r/n8n..."}, {"timestamp": "2026-03-11T21:33:33.160052", "level": "INFO", "script": "scrape_reddit", "message": "Fetching up to 100 recent posts from r/automation..."}, {"timestamp": "2026-03-11T21:33:35.533878", "level": "INFO", "script": "scrape_reddit", "message": "Retrieved 100 posts for r/automation. Sorting by engagement (score + comments)..."}, {"timestamp": "2026-03-11T21:33:35.534496", "level": "INFO", "script": "scrape_reddit", "message": "Fetching real author avatars for top 5 posts in r/automation..."}, {"timestamp": "2026-03-11T21:33:44.830740", "level": "SUCCESS", "script": "scrape_reddit", "message": "Execution complete. Results successfully saved to .tmp\\top_reddit_posts.md and .tmp\\top_reddit_posts.json"}];
+
+        function renderLogs(data) {
+            const tbody = document.getElementById('logsBody');
+            const emptyState = document.getElementById('emptyState');
+            const table = document.getElementById('logsTable');
+            
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                emptyState.style.display = 'block';
+                table.style.display = 'none';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            table.style.display = 'table';
+
+            data.forEach(log => {
+                const tr = document.createElement('tr');
+                
+                const d = new Date(log.timestamp);
+                const timeStr = d.toLocaleString();
+
+                tr.innerHTML = `
+                    <td class="time">${timeStr}</td>
+                    <td><span class="level-badge level-${log.level}">${log.level}</span></td>
+                    <td class="script-name">${log.script}</td>
+                    <td class="message">${log.message}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterLogs() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const levelFilter = document.getElementById('levelFilter').value;
+
+            const filtered = logs.filter(log => {
+                const matchesSearch = (log.message || '').toLowerCase().includes(searchTerm) || 
+                                     (log.script || '').toLowerCase().includes(searchTerm);
+                const matchesLevel = levelFilter === '' || log.level === levelFilter;
+                
+                return matchesSearch && matchesLevel;
+            });
+
+            renderLogs(filtered);
+        }
+
+        // Initial render (reverse to show newest first)
+        renderLogs(logs.reverse());
+    </script>
+</body>
+</html>

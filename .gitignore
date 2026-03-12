@@ -1,0 +1,24 @@
+# Environment and Secrets
+.env
+.env.*
+credentials.json
+token.json
+
+# Temporary Files
+.tmp/
+.temp/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+env/
+.env_dir/
+
+# OS generated files
+.DS_Store
+Thumbs.db

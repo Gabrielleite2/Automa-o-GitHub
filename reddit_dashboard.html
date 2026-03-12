@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Reddit Automation Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            // Public Key for EmailJS setup
+            emailjs.init({
+              publicKey: "TlvO11tvjuzhM1Tbq", // User provided Public Key
+            });
+        })();
+    </script>
+    
+    <style>
+        :root {
+            --bg-body: #f4f6fa;
+            --grad-header: linear-gradient(135deg, #c364fa, #f55ce4);
+            
+            /* Card Gradients */
+            --grad-1: linear-gradient(135deg, #81c7ff, #629bfb);  /* Blue */
+            --grad-2: linear-gradient(135deg, #ffc977, #f49545);  /* Orange */
+            --grad-3: linear-gradient(135deg, #fe7db3, #f54378);  /* Pink */
+            --grad-4: linear-gradient(135deg, #ce8cfd, #9065fc);  /* Purple */
+            --grad-5: linear-gradient(135deg, #60efc7, #24ce9d);  /* Mint */
+            
+            --text-main: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Nunito', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* Desktop Container */
+        .desktop-container {
+            width: 100%;
+            max-width: 1440px;
+            background-color: #ffffff;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0 auto;
+        }
+
+        /* Top Bar & Header */
+        .app-header {
+            background: var(--grad-header);
+            padding: 2.5rem 3rem 0rem 3rem;
+            color: white;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.5rem;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+        
+        .header-title {
+            font-weight: 800;
+            font-size: 1.8rem;
+            letter-spacing: -0.5px;
+        }
+
+        .icon-btn {
+            cursor: pointer;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.1);
+            transition: background 0.2s;
+        }
+        
+        .icon-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        /* Top Menu Dropdown */
+        .top-menu {
+            position: absolute;
+            top: 60px;
+            right: 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 8px;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 100;
+            min-width: 240px;
+        }
+        .top-menu.active {
+            display: flex;
+            animation: menuFadeIn 0.2s ease;
+        }
+        @keyframes menuFadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .top-menu-item {
+            padding: 12px 20px;
+            color: #1e293b;
+            font-size: 1.05rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .top-menu-item:hover {
+            background: #f1f5f9;
+        }
+        
+        .top-menu-item i {
+            color: #94a3b8;
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.9);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #c364fa;
+        }
+        .loading-overlay.active {
+            display: flex;
+        }
+        .loading-overlay i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: spin 1s linear infinite;
+        }
+        .loading-overlay p {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #1e293b;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 2.5rem;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 2px;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab {
+            font-size: 1.3rem;
+            font-weight: 600;
+            cursor: pointer;
+            position: relative;
+            color: rgba(255,255,255,0.7);
+            white-space: nowrap;
+            padding-bottom: 16px;
+            transition: color 0.2s, font-size 0.2s;
+        }
+        .tab.active {
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0px; left: 0; width: 100%;
+            height: 4px;
+            background-color: white;
+            border-radius: 4px;
+        }
+
+        /* Post Lists */
+        .lists-container {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Responsive Grid for Desktop */
+        .post-list {
+            padding: 1rem 3rem 10rem 3rem;
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+            flex: 1;
+            overflow-y: auto;
+            animation: fadeIn 0.4s ease;
+            align-content: start;
+        }
+        .post-list.active {
+            display: grid;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Card Setup */
+        .card {
+            border-radius: 20px;
+            padding: 0; /* Remove padding to handle full image */
+            display: flex;
+            flex-direction: column;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.06);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            min-height: 180px;
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+        }
+        
+        /* Apply dynamic gradients by rank */
+        .card.rank-1 { background: var(--grad-1); }
+        .card.rank-2 { background: var(--grad-2); }
+        .card.rank-3 { background: var(--grad-3); }
+        .card.rank-4 { background: var(--grad-4); }
+        .card.rank-5 { background: var(--grad-5); }
+        .card.rank-other { background: var(--grad-1); filter: hue-rotate(45deg); }
+
+        /* Multi-selection styles */
+        .card.selectable {
+            cursor: pointer;
+        }
+        
+        .card.selected {
+            transform: scale(0.96) translateY(0);
+            box-shadow: 0 0 0 4px #10b981; /* Green border */
+        }
+        .card.selected::before {
+            content: '\f058'; /* fa-circle-check */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            position: absolute;
+            top: 20px; left: 20px;
+            font-size: 2.5rem;
+            color: #10b981;
+            z-index: 10;
+            background: white;
+            border-radius: 50%;
+            height: 38px; width: 38px;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* Optional Post Thumbnail Section */
+        .post-image-wrapper {
+            width: 100%;
+            height: 200px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .post-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .card:hover .post-image-wrapper img {
+            transform: scale(1.05); /* subtle zoom on hover */
+        }
+
+        /* Right Oval Shape Element inside card (keeps mobile look) */
+        .card-shape {
+            position: absolute;
+            right: -60px;
+            top: -20%;
+            width: 180px;
+            height: 140%;
+            background: rgba(255,255,255,0.12);
+            border-radius: 50%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Card Content Layer */
+        .card-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            width: 100%;
+            padding: 1.5rem;
+            flex: 1; /* take remaining height */
+        }
+
+        .avatar-col {
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        .avatar-col img {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: rgba(255,255,255,0.2);
+            border: 3px solid rgba(255,255,255,0.5);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .info-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-right: 12px;
+            min-width: 0; /* fixes truncate bug in flex */
+        }
+        .author-name {
+            font-size: 1.25rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .post-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.95);
+            margin-bottom: 16px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-align: center;
+        }
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .stat-value {
+            font-size: 1.1rem;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .stat-label {
+            color: rgba(255,255,255,0.85);
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .rank-col {
+            width: 70px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 2px;
+            position: relative;
+            flex-shrink: 0;
+            border-left: 1px solid rgba(255,255,255,0.2);
+            margin-left: 8px;
+        }
+        .rank-dots {
+            font-size: 1.8rem;
+            line-height: 0.3;
+            letter-spacing: 2px;
+            margin-bottom: auto;
+            color: rgba(255,255,255,0.9);
+        }
+        .rank-number {
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-top: 14px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        .rank-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 4px;
+        }
+
+        /* Selection Bottom Action Bar */
+        .selection-bar {
+            position: absolute;
+            bottom: -150px; left: 0; right: 0;
+            background: #ffffff;
+            padding: 1.5rem 3rem;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+        }
+        .selection-bar.active {
+            bottom: 0;
+        }
+        .selection-count {
+            font-weight: 800;
+            color: #1e293b;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .selection-count span {
+            background:#f1f5f9; 
+            padding:6px 16px; 
+            border-radius:12px; 
+            color:#c364fa;
+            font-size: 1.3rem;
+        }
+        
+        .selection-actions {
+            display: flex;
+            gap: 16px;
+        }
+        .btn-cancel {
+            background: #f1f5f9;
+            color: #64748b;
+            border: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 1.05rem;
+            transition: background 0.2s;
+        }
+        .btn-cancel:hover { background: #e2e8f0; }
+        
+        .btn-send {
+            background: var(--grad-header);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(189, 98, 255, 0.35);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            font-size: 1.05rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-send:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(189, 98, 255, 0.45);
+        }
+
+        /* Toast Notification */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+        .toast {
+            background: white;
+            color: #1e293b;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 5px solid #3b82f6;
+            max-width: 320px;
+        }
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+        .toast.info { border-left-color: #c364fa; }
+        .toast.show { transform: translateX(0); }
+
+        /* Email Config Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 300;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.2s;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-card {
+            background: white;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+        .modal-desc {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+        }
+        .email-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 1.5rem;
+        }
+        .email-input:focus {
+            border-color: #c364fa;
+        }
+        .modal-btn {
+            width: 100%;
+            background: var(--grad-header);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(189, 98, 255, 0.35);
+        }
+        .close-modal {
+            position: absolute;
+            top: 16px; right: 20px;
+            font-size: 1.5rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .close-modal:hover { color: #64748b; }
+
+    </style>
+</head>
+<body>
+
+    <div class="desktop-container">
+        
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <i class="fa-solid fa-spinner"></i>
+            <p>Atualizando Dados...</p>
+        </div>
+
+        <!-- Top App Bar Base -->
+        <div class="app-header">
+            <div class="top-row">
+                <div class="header-title"><i class="fa-solid fa-bolt" style="margin-right:12px;"></i> AutomateHub</div>
+                
+                <!-- Main interaction Menu Icon -->
+                <div class="icon-btn" onclick="toggleMenu(event)"><i class="fa-solid fa-bars" style="font-size: 1.8rem;"></i></div>
+                
+                <div class="top-menu" id="topMenu">
+                    <div class="top-menu-item" onclick="refreshData()">
+                        <i class="fa-solid fa-rotate-right"></i> Atualizar Dados
+                    </div>
+                    <div class="top-menu-item" onclick="openEmailConfig()">
+                        <i class="fa-solid fa-gear"></i> Configurar E-mail
+                    </div>
+                    <div class="top-menu-item" onclick="activateSelectionMode()">
+                        <i class="fa-regular fa-paper-plane"></i> Selecionar para Envio
+                    </div>
+                </div>
+            </div>
+
+            <div class="tabs" id="navTabs">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+
+        <!-- Scrollable Post Lists -->
+        <div class="lists-container" id="listsContainer">
+            <!-- Lists injected by JS -->
+        </div>
+
+        <!-- Selection Mode Bottom Action Area -->
+        <div class="selection-bar" id="selectionBar">
+            <div class="selection-count">
+                Selecionados: <span id="selCount">0</span>
+            </div>
+            <div class="selection-actions">
+                <button class="btn-cancel" onclick="cancelSelection()">Cancelar</button>
+                <button class="btn-send" onclick="sendSelectedEmail()">
+                    <i class="fa-solid fa-envelope"></i> Enviar (<span id="btnSendCount">0</span>)
+                </button>
+            </div>
+        </div>
+
+        <!-- Floating Email Config Modal -->
+        <div class="modal-overlay" id="emailModal" onclick="closeEmailConfig(event)">
+            <div class="modal-card" onclick="event.stopPropagation()">
+                <i class="fa-solid fa-xmark close-modal" onclick="closeEmailConfig()"></i>
+                <h3 class="modal-title">Configurar Destino</h3>
+                <p class="modal-desc">Para qual endereço de e-mail você deseja enviar os posts selecionados?</p>
+                
+                <input type="email" id="targetEmailInput" class="email-input" placeholder="exemplo@gmail.com">
+                
+                <button class="modal-btn" onclick="saveEmailConfig()">Salvar E-mail</button>
+            </div>
+        </div>
+
+        <!-- Toast Notifications Container -->
+        <div class="toast-container" id="toastContainer"></div>
+
+    </div>
+
+    <script>
+        const redditData = {"n8n": [{"approved_at_utc": null, "subreddit": "n8n", "selftext": "A while ago, I connected with a small bookstore owner who had a very simple but exhausting problem: their entire customer service and ordering system was running manually through WhatsApp.\n\nHe was running ads on Facebook and Instagram.  \nCustomers were constantly messaging them for the same things:\n\n* \"Is this book available?\"\n* \"How much is this?\"\n* Sending unreadable voice notes.\n* Sending screenshots of bank transfer receipts.\n\nThe owner (who is running the store alone) was spending hours every single day manually replying to messages, checking inventory, and writing down shipping addresses.\n\nI suggested we could automate almost all of it, so we got on a call. After understanding his flow, I built a fully automated WhatsApp AI assistant using n8n.\n\n**Here is the tech stack and how the system is structured:**\u00a0The core of the system is a WhatsApp interface connected to Supabase and OpenAI (via Langchain nodes).\n\n* **Smart Media Handling:**\u00a0I built a decryption flow that handles whatever the user throws at it. If they send an audio message, it gets transcribed. If they send an image, an AI Vision agent analyzes it to see if it\u2019s a payment receipt, a specific book, or just a random image.\n* **Intent Routing:**\u00a0Every message passes through an AI classifier. It determines if the user is asking about a product, ready to order, checking an order status, or if they need to be handed off to a human. This routing is helpful to reduce the usage of the AI tokens.\n* **Hybrid Search (Vector + FTS):**\u00a0If the user asks for a book, the system searches the Supabase database using both Vector Search and Full Text Search. It pulls the exact product, price, and even sends a short video of the book if available. The search system uses 2 separate layers (FTS and Vector). If the first one fails to find the product, the system will run the second one.\n* **Order Execution Agent:**\u00a0Once the user wants to buy, a dedicated AI Agent steps in. It strictly collects the shipping details (Name, Address, Phone), locks the chat session into an \"ordering state,\" and creates a draft order. It even handles the payment routing (adding a fee for Cash on Delivery or verifying bank transfers).\n\n**The Result:**\u00a0Instead of building it all at once, I developed each subsystem separately (Search, Ordering, Media Handling) and connected them at the end.\n\nAfter testing it, the client was absolutely thrilled. It saves them countless hours of repetitive work and gives their customers instant replies 24/7.\n\nWe agreed on $500 for the project. It\u2019s my very first paid n8n gig!\n\nIt might not be the most complex software in the world, but it solves a massively boring business problem. Sometimes the best automations are just about giving business owners their time back.\n\nWhat do you guys think?", "author_fullname": "t2_3xisbd5l", "saved": false, "mod_reason_title": null, "gilded": 0, "clicked": false, "is_gallery": true, "title": "I made $500 on my first n8n paid project, building an AI WhatsApp Automation for a local business. Here\u2019s a breakdown of what I built.", "link_flair_richtext": [], "subreddit_name_prefixed": "r/n8n", "hidden": false, "pwls": 6, "link_flair_css_class": "", "downs": 0, "thumbnail_height": 57, "top_awarded_type": null, "hide_score": false, "media_metadata": {"mqo1zjupb9og1": {"status": "valid", "e": "Image", "m": "image/png", "p": [{"y": 78, "x": 108, "u": "https://preview.redd.it/mqo1zjupb9og1.png?width=108&amp;crop=smart&amp;auto=webp&amp;s=b71475b000db5955a95b53a1f070294b392bb063"}, {"y": 156, "x": 216, "u": "https://preview.redd.it/mqo1zjupb9og1.png?width=216&amp;crop=smart&amp;auto=webp&amp;s=ed35cd9c47c1656b47015f3eaa2254689b8d82f0"}, {"y": 231, "x": 320, "u": "https://preview.redd.it/mqo1zjupb9og1.png?width=320&amp;crop=smart&amp;auto=webp&amp;s=ae3bd65875480af7195f79f4baa2786b0c95e3cb"}, {"y": 462, "x": 640, "u": "https://preview.redd.it/mqo1zjupb9og1.png?width=640&amp;crop=smart&amp;auto=webp&amp;s=a26e08daf56df82a6d62cc373b6606f719e2a6f3"}, {"y": 694, "x": 960, "u": "https://preview.redd.it/mqo1zjupb9og1.png?width=960&amp;crop=smart&amp;auto=webp&amp;s=e3c38bc701dbc409cb7bb1270e3c8116ab3f82aa"}], "s": {"y": 753, "x": 1041, "u": "https://preview.redd.it/mqo1zjupb9og1.png?width=1041&amp;format=png&amp;auto=webp&amp;s=134699329507df652500d71755be9a62b126ac1c"}, "id": "mqo1zjupb9og1"}, "5s3ilkvob9og1": {"status": "valid", "e": "Image", "m": "image/png", "p": [{"y": 44, "x": 108, "u": "https://preview.redd.it/5s3ilkvob9og1.png?width=108&amp;crop=smart&amp;auto=webp&amp;s=e4cb9e05c281bcc688a5b865d15f727a3dca1862"}, {"y": 89, "x": 216, "u": "https://preview.redd.it/5s3ilkvob9og1.png?width=216&amp;crop=smart&amp;auto=webp&amp;s=ecbd98f5ace0c14eaff7366546b79e8975173d45"}, {"y": 132, "x": 320, "u": "https://preview.redd.it/5s3ilkvob9og1.png?width=320&amp;crop=smart&amp;auto=webp&amp;s=f1e04c99dbb892b85976227bd6181be1fd3453c7"}, {"y": 264, "x": 640, "u": "https://preview.redd.it/5s3ilkvob9og1.png?width=640&amp;crop=smart&amp;auto=webp&amp;s=5f9002ae25450f32419ff5d622eb66335e95566d"}, {"y": 397, "x": 960, "u": "https://preview.redd.it/5s3ilkvob9og1.png?width=960&amp;crop=smart&amp;auto=webp&amp;s=4ad7ccd83a071f2a927a53f9fdc76f73f4da3153"}, {"y": 447, "x": 1080, "u": "https://preview.redd.it/5s3ilkvob9og1.png?width=1080&amp;crop=smart&amp;auto=webp&amp;s=0bec4625503f8de2746ebcd597a5a7004c81e658"}], "s": {"y": 743, "x": 1795, "u": "https://preview.redd.it/5s3ilkvob9og1.png?width=1795&amp;format=png&amp;auto=webp&amp;s=a9389af1e7b0d6222f755dfbdd01ab302f6e548d"}, "id": "5s3ilkvob9og1"}, "zz743jupb9og1": {"status": "valid", "e": "Image", "m": "image/png", "p": [{"y": 58, "x": 108, "u": "https://preview.redd.it/zz743jupb9og1.png?width=108&amp;crop=smart&amp;auto=webp&amp;s=21a90e6ba35ad6316c59fc76cf414deec7c96313"}, {"y": 117, "x": 216, "u": "https://preview.redd.it/zz743jupb9og1.png?width=216&amp;crop=smart&amp;auto=webp&amp;s=04f61a1e3f881d0c5112ddd75425802e9a56cc55"}, {"y": 174, "x": 320, "u": "https://preview.redd.it/zz743jupb9og1.png?width=320&amp;crop=smart&amp;auto=webp&amp;s=c20c929b18b18d3ff79301519d887b406b28dcb5"}, {"y": 348, "x": 640, "u": "https://preview.redd.it/zz743jupb9og1.png?width=640&amp;crop=smart&amp;auto=webp&amp;s=ddd7b56c3b09b9c36df7228d1ad29bcb419d2466"}, {"y": 522, "x": 960, "u": "https://preview.redd.it/zz743jupb9og1.png?width=960&amp;crop=smart&amp;auto=webp&amp;s=b54957135ad18e2914dc0e2531d5bc2a89c7b8d5"}, {"y": 587, "x": 1080, "u": "https://preview.redd.it/zz743jupb9og1.png?width=1080&amp;crop=smart&amp;auto=webp&amp;s=d7c0ba080463d90024d17d1f56aca35b4f199d44"}], "s": {"y": 719, "x": 1322, "u": "https://preview.redd.it/zz743jupb9og1.png?width=1322&amp;format=png&amp;auto=webp&amp;s=46a701029071dd263fd07e16e7b1a91fb58c1a05"}, "id": "zz743jupb9og1"}, "cehapmupb9og1": {"status": "valid", "e": "Image", "m": "image/png", "p": [{"y": 55, "x": 108, "u": "https://preview.redd.it/cehapmupb9og1.png?width=108&amp;crop=smart&amp;auto=webp&amp;s=abe89c065c1f502385863cae335307a5cb83129f"}, {"y": 110, "x": 216, "u": "https://preview.redd.it/cehapmupb9og1.png?width=216&amp;crop=smart&amp;auto=webp&amp;s=6e45998fd9e5ebe5d4cfa705c697a34dfcada9c9"}, {"y": 163, "x": 320, "u": "https://preview.redd.it/cehapmupb9og1.png?width=320&amp;crop=smart&amp;auto=webp&amp;s=63f496837ad1ac7bef0b37fe92dee18f4fc178f0"}, {"y": 327, "x": 640, "u": "https://preview.redd.it/cehapmupb9og1.png?width=640&amp;crop=smart&amp;auto=webp&amp;s=506d9023e1d85f7e4d6613e52aec7988c495f956"}, {"y": 491, "x": 960, "u": "https://preview.redd.it/cehapmupb9og1.png?width=960&amp;crop=smart&amp;auto=webp&amp;s=7014206c49fcc496b9c047e28eac82858ffb6e42"}, {"y": 552, "x": 1080, "u": "https://preview.redd.it/cehapmupb9og1.png?width=1080&amp;crop=smart&amp;auto=webp&amp;s=4751c3224965f2a8a8d9aa5c5f6f02b0ce750010"}], "s": {"y": 820, "x": 1602, "u": "https://preview.redd.it/cehapmupb9og1.png?width=1602&amp;format=png&amp;auto=webp&amp;s=b2205b5f1f6a1e06a5e9ab8cd760577066c960d8"}, "id": "cehapmupb9og1"}, "9suiekupb9og1": {"status": "valid", "e": "Image", "m": "image/png", "p": [{"y": 31, "x": 108, "u": "https://preview.redd.it/9suiekupb9og1.png?width=108&amp;crop=smart&amp;auto=webp&amp;s=fac2308151a7f3020674f46f653ae665a432d9f9"}, {"y": 62, "x": 216, "u": "https://preview.redd.it/9suiekupb9og1.png?width=216&amp;crop=smart&amp;auto=webp&amp;s=ea90ea2bb7a52a390fb44c302a5ececcb777ec10"}, {"y": 93, "x": 320, "u": "https://preview.redd.it/9suiekupb9og1.png?width=320&amp;crop=smart&amp;auto=webp&amp;s=3c155e391a984186d7e8eda41d3295487a3c6386"}, {"y": 186, "x": 640, "u": "https://preview.redd.it/9suiekupb9og1.png?width=640&amp;crop=smart&amp;auto=webp&amp;s=9074ec45f1348fe237b9135178726190be6eae5a"}, {"y": 279, "x": 960, "u": "https://preview.redd.it/9suiekupb9og1.png?width=960&amp;crop=smart&amp;auto=webp&amp;s=6058c599ca228e1ad5b59eaacc975e136ddde319"}, {"y": 314, "x": 1080, "u": "https://preview.redd.it/9suiekupb9og1.png?width=1080&amp;crop=smart&amp;auto=webp&amp;s=aae25685d970117a9f7dddb855b79957530dda21"}], "s": {"y": 424, "x": 1454, "u": "https://preview.redd.it/9suiekupb9og1.png?width=1454&amp;format=png&amp;auto=webp&amp;s=835bb474820ddd65b6ad20f654049f905a9b8119"}, "id": "9suiekupb9og1"}}, "name": "t3_1rq486u", "quarantine": false, "link_flair_text_color": "light", "upvote_ratio": 0.98, "author_flair_background_color": null, "ups": 344, "domain": "reddit.com", "media_embed": {}, "thumbnail_width": 140, "author_flair_template_id": null, "is_original_content": false, "user_reports": [], "secure_media": null, "is_reddit_media_domain": false, "is_meta": false, "category": null, "secure_media_embed": {}, "gallery_data": {"items": [{"media_id": "5s3ilkvob9og1", "id": 883035640}, {"media_id": "mqo1zjupb9og1", "id": 883035641}, {"media_id": "zz743jupb9og1", "id": 883035642}, {"media_id": "9suiekupb9og1", "id": 883035643}, {"media_id": "cehapmupb9og1", "id": 883035644}]}, "link_flair_text": "Discussion - No Workflows", "can_mod_post": false, "score": 344, "approved_by": null, "is_created_from_ads_ui": false, "author_premium": false, "thumbnail": "https://preview.redd.it/5s3ilkvob9og1.png?width=140&amp;height=57&amp;auto=webp&amp;s=74d839bdea1d493234d0501e11caf49213cd30a9", "edited": false, "author_flair_css_class": null, "author_flair_richtext": [], "gildings": {}, "content_categories": null, "is_self": false, "subreddit_type": "public", "created": 1773165629.0, "link_flair_type": "text", "wls": 6, "removed_by_category": null, "banned_by": null, "author_flair_type": "text", "total_awards_received": 0, "allow_live_comments": false, "selftext_html": "&lt;!-- SC_OFF --&gt;&lt;div class=\"md\"&gt;&lt;p&gt;A while ago, I connected with a small bookstore owner who had a very simple but exhausting problem: their entire customer service and ordering system was running manually through WhatsApp.&lt;/p&gt;\n\n&lt;p&gt;He was running ads on Facebook and Instagram.&lt;br/&gt;\nCustomers were constantly messaging them for the same things:&lt;/p&gt;\n\n&lt;ul&gt;\n&lt;li&gt;&amp;quot;Is this book available?&amp;quot;&lt;/li&gt;\n&lt;li&gt;&amp;quot;How much is this?&amp;quot;&lt;/li&gt;\n&lt;li&gt;Sending unreadable voice notes.&lt;/li&gt;\n&lt;li&gt;Sending screenshots of bank transfer receipts.&lt;/li&gt;\n&lt;/ul&gt;\n\n&lt;p&gt;The owner (who is running the store alone) was spending hours every single day manually replying to messages, checking inventory, and writing down shipping addresses.&lt;/p&gt;\n\n&lt;p&gt;I suggested we could automate almost all of it, so we got on a call. After understanding his flow, I built a fully automated WhatsApp AI assistant using n8n.&lt;/p&gt;\n\n&lt;p&gt;&lt;strong&gt;Here is the tech stack and how the system is structured:&lt;/strong&gt;\u00a0The core of the system is a WhatsApp interface connected to Supabase and OpenAI (via Langchain nodes).&lt;/p&gt;\n\n&lt;ul&gt;\n&lt;li&gt;&lt;strong&gt;Smart Media Handling:&lt;/strong&gt;\u00a0I built a decryption flow that handles whatever the user throws at it. If they send an audio message, it gets transcribed. If they send an image, an AI Vision agent analyzes it to see if it\u2019s a payment receipt, a specific book, or just a random image.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Intent Routing:&lt;/strong&gt;\u00a0Every message passes through an AI classifier. It determines if the user is asking about a product, ready to order, checking an order status, or if they need to be handed off to a human. This routing is helpful to reduce the usage of the AI tokens.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Hybrid Search (Vector + FTS):&lt;/strong&gt;\u00a0If the user asks for a book, the system searches the Supabase database using both Vector Search and Full Text Search. It pulls the exact product, price, and even sends a short video of the book if available. The search system uses 2 separate layers (FTS and Vector). If the first one fails to find the product, the system will run the second one.&lt;/li&gt;\n&lt;li&gt;&lt;strong&gt;Order Execution Agent:&lt;/strong&gt;\u00a0Once the user wants to buy, a dedicated AI Agent steps in. It strictly collects the shipping details (Name, Address, Phone), locks the chat session into an &amp;quot;ordering state,&amp;quot; and creates a draft order. It even handles the payment routing (adding a fee for Cash on Delivery or verifying bank transfers).&lt;/li&gt;\n&lt;/ul&gt;\n\n&lt;p&gt;&lt;strong&gt;The Result:&lt;/strong&gt;\u00a0Instead of building it all at once, I developed each subsystem separately (Search, Ordering, Media Handling) and connected them at the end.&lt;/p&gt;\n\n&lt;p&gt;After testing it, the client was absolutely thrilled. It saves them countless hours of repetitive work and gives their customers instant replies 24/7.&lt;/p&gt;\n\n&lt;p&gt;We agreed on $500 for the project. It\u2019s my very first paid n8n gig!&lt;/p&gt;\n\n&lt;p&gt;It might not be the most complex software in the world, but it solves a massively boring business problem. Sometimes the best automations are just about giving business owners their time back.&lt;/p&gt;\n\n&lt;p&gt;What do you guys think?&lt;/p&gt;\n&lt;/div&gt;&lt;!-- SC_ON --&gt;", "likes": null, "suggested_sort": null, "banned_at_utc": null, "url_overridden_by_dest": "https://www.reddit.com/gallery/1rq486u", "view_count": null, "archived": false, "no_follow": false, "is_crosspostable": false, "pinned": false, "over_18": false, "all_awardings": [], "awarders": [], "media_only": false, "link_flair_template_id": "dbb75a50-5abb-11f0-a043-4eec0ab69920", "can_gild": false, "spoiler": false, "locked": false, "author_flair_text": null, "treatment_tags": [], "visited": false, "removed_by": null, "mod_note": null, "distinguished": null, "subreddit_id": "t5_36pcjp", "author_is_blocked": false, "mod_reason_by": null, "num_reports": null, "removal_reason": null, "link_flair_background_color": "#bb00ff", "id": "1rq486u", "is_robot_indexable": true, "report_reasons": null, "author": "anassy1", "discussion_type": null, "num_comments": 89, "send_replies": true, "contest_mode": false, "mod_reports": [], "author_patreon_flair": false, "author_flair_text_color": null, "permalink": "/r/n8n/comments/1rq486u/i_made_500_on_my_first_n8n_paid_project_building/", "stickied": false, "url": "https://www.reddit.com/gallery/1rq486u", "subreddit_subscribers": 224551, "created_utc": 1773165629.0, "num_crossposts": 5, "media": null, "is_video": false, "author_icon_url": "https://i.redd.it/snoovatar/avatars/3e9bd6e0-5f1a-409b-bc29-e5deb4dd6105-headshot.png"}, {"approved_at_utc": null, "subreddit": "n8n", "selftext": "So I basically have no experience with n8n and never built a workflow myself. I tried building a n8n workflow by just chatting with Claude sonnet 4.6 (free plan), I made a good progress but as soon as the workflow started getting a bit complex and long, I hit a wall and sonnet 4.6 started hallucinating and couldn't solve the problems and bugs I encountered.. I'm stuck is a infinite loop of errors rn.\n\nThat's why I'm thinking of subscribing to Claude pro 20$ plan and add n8n-mcp + n8n skills, and I'm wondering whether this is enough to rebuild my workflow from scratch with a better logic using opus for planning/debugging, or the max plan is a must? ", "author_fullname": "t2_msrl1malo", "saved": false, "mod_reason_title": null, "gilded": 0, "clicked": false, "title": "Is Claude 20$ plan enough to build a complex n8n workflow?", "link_flair_richtext": [], "subreddit_name_prefixed": "r/n8n", "hidden": false, "pwls": 6, "link_flair_css_class": "", "downs": 0, "thumbnail_height": null, "top_awarded_type": null, "hide_score": false, "name": "t3_1rpf5k9", "quarantine": false, "link_flair_text_color": "light", "upvote_ratio": 0.89, "author_flair_background_color": null, "subreddit_type": "public", "ups": 66, "total_awards_received": 0, "media_embed": {}, "thumbnail_width": null, "author_flair_template_id": null, "is_original_content": false, "user_reports": [], "secure_media": null, "is_reddit_media_domain": false, "is_meta": false, "category": null, "secure_media_embed": {}, "link_flair_text": "Help", "can_mod_post": false, "score": 66, "approved_by": null, "is_created_from_ads_ui": false, "author_premium": false, "thumbnail": "self", "edited": false, "author_flair_css_class": null, "author_flair_richtext": [], "gildings": {}, "content_categories": null, "is_self": true, "mod_note": null, "created": 1773095714.0, "link_flair_type": "text", "wls": 6, "removed_by_category": null, "banned_by": null, "author_flair_type": "text", "domain": "self.n8n", "allow_live_comments": false, "selftext_html": "&lt;!-- SC_OFF --&gt;&lt;div class=\"md\"&gt;&lt;p&gt;So I basically have no experience with n8n and never built a workflow myself. I tried building a n8n workflow by just chatting with Claude sonnet 4.6 (free plan), I made a good progress but as soon as the workflow started getting a bit complex and long, I hit a wall and sonnet 4.6 started hallucinating and couldn&amp;#39;t solve the problems and bugs I encountered.. I&amp;#39;m stuck is a infinite loop of errors rn.&lt;/p&gt;\n\n&lt;p&gt;That&amp;#39;s why I&amp;#39;m thinking of subscribing to Claude pro 20$ plan and add n8n-mcp + n8n skills, and I&amp;#39;m wondering whether this is enough to rebuild my workflow from scratch with a better logic using opus for planning/debugging, or the max plan is a must? &lt;/p&gt;\n&lt;/div&gt;&lt;!-- SC_ON --&gt;", "likes": null, "suggested_sort": null, "banned_at_utc": null, "view_count": null, "archived": false, "no_follow": false, "is_crosspostable": false, "pinned": false, "over_18": false, "all_awardings": [], "awarders": [], "media_only": false, "link_flair_template_id": "4a605c96-5abb-11f0-bcd3-1668b8ecc091", "can_gild": false, "spoiler": false, "locked": false, "author_flair_text": null, "treatment_tags": [], "visited": false, "removed_by": null, "num_reports": null, "distinguished": null, "subreddit_id": "t5_36pcjp", "author_is_blocked": false, "mod_reason_by": null, "removal_reason": null, "link_flair_background_color": "#fe0101", "id": "1rpf5k9", "is_robot_indexable": true, "report_reasons": null, "author": "noreagaaa", "discussion_type": null, "num_comments": 40, "send_replies": true, "contest_mode": false, "mod_reports": [], "author_patreon_flair": false, "author_flair_text_color": null, "permalink": "/r/n8n/comments/1rpf5k9/is_claude_20_plan_enough_to_build_a_complex_n8n/", "stickied": false, "url": "https://www.reddit.com/r/n8n/comments/1rpf5k9/is_claude_20_plan_enough_to_build_a_complex_n8n/", "subreddit_subscribers": 224551, "created_utc": 1773095714.0, "num_crossposts": 1, "media": null, "is_video": false, "author_icon_url": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png"}, {"approved_at_utc": null, "subreddit": "n8n", "selftext": "Like many of you I've been using n8n in my professional life for a while now. I recently setup a home server and installed n8n on it, so I'm wondering what kind of things are people doing not for their jobs on n8n? Or for things like personal productivity? Don't see it discussed here often", "author_fullname": "t2_1714gq", "saved": false, "mod_reason_title": null, "gilded": 0, "clicked": false, "title": "What personal automations have you built?", "link_flair_richtext": [], "subreddit_name_prefixed": "r/n8n", "hidden": false, "pwls": 6, "link_flair_css_class": "", "downs": 0, "thumbnail_height": null, "top_awarded_type": null, "hide_score": false, "name": "t3_1rog3w2", "quarantine": false, "link_flair_text_color": "light", "upvote_ratio": 0.98, "author_flair_background_color": null, "subreddit_type": "public", "ups": 46, "total_awards_received": 0, "media_embed": {}, "thumbnail_width": null, "author_flair_template_id": null, "is_original_content": false, "user_reports": [], "secure_media": null, "is_reddit_media_domain": false, "is_meta": false, "category": null, "secure_media_embed": {}, "link_flair_text": "Discussion - No Workflows", "can_mod_post": false, "score": 46, "approved_by": null, "is_created_from_ads_ui": false, "author_premium": false, "thumbnail": "self", "edited": false, "author_flair_css_class": null, "author_flair_richtext": [], "gildings": {}, "content_categories": null, "is_self": true, "mod_note": null, "created": 1773003082.0, "link_flair_type": "text", "wls": 6, "removed_by_category": null, "banned_by": null, "author_flair_type": "text", "domain": "self.n8n", "allow_live_comments": false, "selftext_html": "&lt;!-- SC_OFF --&gt;&lt;div class=\"md\"&gt;&lt;p&gt;Like many of you I&amp;#39;ve been using n8n in my professional life for a while now. I recently setup a home server and installed n8n on it, so I&amp;#39;m wondering what kind of things are people doing not for their jobs on n8n? Or for things like personal productivity? Don&amp;#39;t see it discussed here often&lt;/p&gt;\n&lt;/div&gt;&lt;!-- SC_ON --&gt;", "likes": null, "suggested_sort": null, "banned_at_utc": null, "view_count": null, "archived": false, "no_follow": false, "is_crosspostable": false, "pinned": false, "over_18": false, "all_awardings": [], "awarders": [], "media_only": false, "link_flair_template_id": "dbb75a50-5abb-11f0-a043-4eec0ab69920", "can_gild": false, "spoiler": false, "locked": false, "author_flair_text": null, "treatment_tags": [], "visited": false, "removed_by": null, "num_reports": null, "distinguished": null, "subreddit_id": "t5_36pcjp", "author_is_blocked": false, "mod_reason_by": null, "removal_reason": null, "link_flair_background_color": "#bb00ff", "id": "1rog3w2", "is_robot_indexable": true, "report_reasons": null, "author": "Kaniel-Outis", "discussion_type": null, "num_comments": 33, "send_replies": true, "contest_mode": false, "mod_reports": [], "author_patreon_flair": false, "author_flair_text_color": null, "permalink": "/r/n8n/comments/1rog3w2/what_personal_automations_have_you_built/", "stickied": false, "url": "https://www.reddit.com/r/n8n/comments/1rog3w2/what_personal_automations_have_you_built/", "subreddit_subscribers": 224551, "created_utc": 1773003082.0, "num_crossposts": 1, "media": null, "is_video": false, "author_icon_url": "https://styles.redditmedia.com/t5_99uzu/styles/profileIcon_snoo49490292-73d7-4fbe-935f-71f6af24077f-headshot.png"}, {"approved_at_utc": null, "subreddit": "n8n", "selftext": "I run a mid-size real estate agency and we're drowning in leads we can't qualify fast enough. I've been told AI automation can fix this but I have no idea what's actually possible vs. hype.\n\nBefore I hire someone, I want to see *real* examples not mockups, not \"I can build this.\" I want to see workflows you've already built for real estate: lead scoring, follow-up sequences, CRM syncs, AI calling, whatever.\n\nBudget is serious: $500 for a simple workflow, up to $2,000+ for something full-stack that actually converts leads. I'll pay for the right thing.\n\nDrop your portfolio or DM me. If it solves a real problem, let's talk.", "author_fullname": "t2_1zwuwvv8sa", "saved": false, "mod_reason_title": null, "gilded": 0, "clicked": false, "title": "Real estate agency owner looking to pay $500\u20132,000 for an AI automation workflow show me what you've built", "link_flair_richtext": [], "subreddit_name_prefixed": "r/n8n", "hidden": false, "pwls": 6, "link_flair_css_class": "", "downs": 0, "thumbnail_height": null, "top_awarded_type": null, "hide_score": false, "name": "t3_1rqszcl", "quarantine": false, "link_flair_text_color": "light", "upvote_ratio": 0.81, "author_flair_background_color": null, "subreddit_type": "public", "ups": 23, "total_awards_received": 0, "media_embed": {}, "thumbnail_width": null, "author_flair_template_id": null, "is_original_content": false, "user_reports": [], "secure_media": null, "is_reddit_media_domain": false, "is_meta": false, "category": null, "secure_media_embed": {}, "link_flair_text": "Help", "can_mod_post": false, "score": 23, "approved_by": null, "is_created_from_ads_ui": false, "author_premium": false, "thumbnail": "self", "edited": false, "author_flair_css_class": null, "author_flair_richtext": [], "gildings": {}, "content_categories": null, "is_self": true, "mod_note": null, "created": 1773233717.0, "link_flair_type": "text", "wls": 6, "removed_by_category": null, "banned_by": null, "author_flair_type": "text", "domain": "self.n8n", "allow_live_comments": false, "selftext_html": "&lt;!-- SC_OFF --&gt;&lt;div class=\"md\"&gt;&lt;p&gt;I run a mid-size real estate agency and we&amp;#39;re drowning in leads we can&amp;#39;t qualify fast enough. I&amp;#39;ve been told AI automation can fix this but I have no idea what&amp;#39;s actually possible vs. hype.&lt;/p&gt;\n\n&lt;p&gt;Before I hire someone, I want to see &lt;em&gt;real&lt;/em&gt; examples not mockups, not &amp;quot;I can build this.&amp;quot; I want to see workflows you&amp;#39;ve already built for real estate: lead scoring, follow-up sequences, CRM syncs, AI calling, whatever.&lt;/p&gt;\n\n&lt;p&gt;Budget is serious: $500 for a simple workflow, up to $2,000+ for something full-stack that actually converts leads. I&amp;#39;ll pay for the right thing.&lt;/p&gt;\n\n&lt;p&gt;Drop your portfolio or DM me. If it solves a real problem, let&amp;#39;s talk.&lt;/p&gt;\n&lt;/div&gt;&lt;!-- SC_ON --&gt;", "likes": null, "suggested_sort": null, "banned_at_utc": null, "view_count": null, "archived": false, "no_follow": false, "is_crosspostable": false, "pinned": false, "over_18": false, "all_awardings": [], "awarders": [], "media_only": false, "link_flair_template_id": "4a605c96-5abb-11f0-bcd3-1668b8ecc091", "can_gild": false, "spoiler": false, "locked": false, "author_flair_text": null, "treatment_tags": [], "visited": false, "removed_by": null, "num_reports": null, "distinguished": null, "subreddit_id": "t5_36pcjp", "author_is_blocked": false, "mod_reason_by": null, "removal_reason": null, "link_flair_background_color": "#fe0101", "id": "1rqszcl", "is_robot_indexable": true, "report_reasons": null, "author": "Vivid-Raisin-2342", "discussion_type": null, "num_comments": 53, "send_replies": true, "contest_mode": false, "mod_reports": [], "author_patreon_flair": false, "author_flair_text_color": null, "permalink": "/r/n8n/comments/1rqszcl/real_estate_agency_owner_looking_to_pay_5002000/", "stickied": false, "url": "https://www.reddit.com/r/n8n/comments/1rqszcl/real_estate_agency_owner_looking_to_pay_5002000/", "subreddit_subscribers": 224551, "created_utc": 1773233717.0, "num_crossposts": 2, "media": null, "is_video": false, "author_icon_url": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_2.png"}, {"approved_at_utc": null, "subreddit": "n8n", "selftext": "", "author_fullname": "t2_6oewydg2", "saved": false, "mod_reason_title": null, "gilded": 0, "clicked": false, "title": "Help with my workflow", "link_flair_richtext": [], "subreddit_name_prefixed": "r/n8n", "hidden": false, "pwls": 6, "link_flair_css_class": "", "downs": 0, "thumbnail_height": 67, "top_awarded_type": null, "hide_score": false, "name": "t3_1rp2sxg", "quarantine": false, "link_flair_text_color": "light", "upvote_ratio": 0.79, "author_flair_background_color": null, "ups": 8, "total_awards_received": 0, "media_embed": {}, "thumbnail_width": 140, "author_flair_template_id": null, "is_original_content": false, "user_reports": [], "secure_media": null, "is_reddit_media_domain": true, "is_meta": false, "category": null, "secure_media_embed": {}, "link_flair_text": "Help", "can_mod_post": false, "score": 8, "approved_by": null, "is_created_from_ads_ui": false, "author_premium": false, "thumbnail": "https://preview.redd.it/89fu35klc1og1.png?width=140&amp;height=67&amp;auto=webp&amp;s=f6d1354e8b3a2862784099668c2c33ad1ec3d807", "edited": false, "author_flair_css_class": null, "author_flair_richtext": [], "gildings": {}, "post_hint": "image", "content_categories": null, "is_self": false, "subreddit_type": "public", "created": 1773069054.0, "link_flair_type": "text", "wls": 6, "removed_by_category": null, "banned_by": null, "author_flair_type": "text", "domain": "i.redd.it", "allow_live_comments": false, "selftext_html": null, "likes": null, "suggested_sort": null, "banned_at_utc": null, "url_overridden_by_dest": "https://i.redd.it/89fu35klc1og1.png", "view_count": null, "archived": false, "no_follow": false, "is_crosspostable": false, "pinned": false, "over_18": false, "preview": {"images": [{"source": {"url": "https://preview.redd.it/89fu35klc1og1.png?auto=webp&amp;s=c12afbddb5b88899b3bda082d9676f17e430f6f1", "width": 1202, "height": 580}, "resolutions": [{"url": "https://preview.redd.it/89fu35klc1og1.png?width=108&amp;crop=smart&amp;auto=webp&amp;s=c2914a0f87b306691b7cd92ea09dbdeced8d5b4d", "width": 108, "height": 52}, {"url": "https://preview.redd.it/89fu35klc1og1.png?width=216&amp;crop=smart&amp;auto=webp&amp;s=e9a2a4d78e9f9f12e35f49682e4bebb524b613fa", "width": 216, "height": 104}, {"url": "https://preview.redd.it/89fu35klc1og1.png?width=320&amp;crop=smart&amp;auto=webp&amp;s=2b44f0b4d9c0c463208cdaa4a5ea18d382dc323b", "width": 320, "height": 154}, {"url": "https://preview.redd.it/89fu35klc1og1.png?width=640&amp;crop=smart&amp;auto=webp&amp;s=29788e71e9b39bafb8e2083b4d95362d9f26bfbf", "width": 640, "height": 308}, {"url": "https://preview.redd.it/89fu35klc1og1.png?width=960&amp;crop=smart&amp;auto=webp&amp;s=c322a744b90aaa5f180f92672960b1050be7cc50", "width": 960, "height": 463}, {"url": "https://preview.redd.it/89fu35klc1og1.png?width=1080&amp;crop=smart&amp;auto=webp&amp;s=59f45b2e8d0971d0376c3306759f4b8679202c6f", "width": 1080, "height": 521}], "variants": {}, "id": "89fu35klc1og1"}], "enabled": true}, "all_awardings": [], "awarders": [], "media_only": false, "link_flair_template_id": "4a605c96-5abb-11f0-bcd3-1668b8ecc091", "can_gild": false, "spoiler": false, "locked": false, "author_flair_text": null, "treatment_tags": [], "visited": false, "removed_by": null, "mod_note": null, "distinguished": null, "subreddit_id": "t5_36pcjp", "author_is_blocked": false, "mod_reason_by": null, "num_reports": null, "removal_reason": null, "link_flair_background_color": "#fe0101", "id": "1rp2sxg", "is_robot_indexable": true, "report_reasons": null, "author": "mcgunner1966", "discussion_type": null, "num_comments": 63, "send_replies": true, "contest_mode": false, "mod_reports": [], "author_patreon_flair": false, "author_flair_text_color": null, "permalink": "/r/n8n/comments/1rp2sxg/help_with_my_workflow/", "stickied": false, "url": "https://i.redd.it/89fu35klc1og1.png", "subreddit_subscribers": 224551, "created_utc": 1773069054.0, "num_crossposts": 0, "media": null, "is_video": false, "author_icon_url": "https://styles.redditmedia.com/t5_4cpwhe/styles/profileIcon_j6ytehqfuw8f1.png"}], "automation": [{"approved_at_utc": null, "subreddit": "automation", "selftext": "I have been experimenting with AI tools lately and it\u2019s amazing how much they can automate in daily work.\n \nFor example, I\u2019m using:\n- AI to summarize meeting notes\n- AI to draft emails or blog outlines\n- AI to categorize and sort support tickets\n \nI feel like there are so many other useful AI tools I might be missing.", "author_fullname": "t2_24juktx4pg", "saved": false, "mod_reason_title": null, "gilded": 0, "clicked": false, "title": "What AI tool became part of your daily workflow?", "link_flair_richtext": [], "subreddit_name_prefixed": "r/automation", "hidden": false, "pwls": 6, "link_flair_css_class": null, "downs": 0, "thumbnail_height": null, "top_awarded_type": null, "hide_score": false, "name": "t3_1rmdnvk", "quarantine": false, "link_flair_text_color": "dark", "upvote_ratio": 0.85, "author_flair_background_color": null, "subreddit_type": "public", "ups": 18, "total_awards_received": 0, "media_embed": {}, "thumbnail_width": null, "author_flair_template_id": null, "is_original_content": false, "user_reports": [], "secure_media": null, "is_reddit_media_domain": false, "is_meta": false, "category": null, "secure_media_embed": {}, "link_flair_text": null, "can_mod_post": false, "score": 18, "approved_by": null, "is_created_from_ads_ui": false, "author_premium": false, "thumbnail": "self", "edited": false, "author_flair_css_class": null, "author_flair_richtext": [], "gildings": {}, "content_categories": null, "is_self": true, "mod_note": null, "created": 1772802868.0, "link_flair_type": "text", "wls": 6, "removed_by_category": null, "banned_by": null, "author_flair_type": "text", "domain": "self.automation", "allow_live_comments": false, "selftext_html": "&lt;!-- SC_OFF --&gt;&lt;div class=\"md\"&gt;&lt;p&gt;I have been experimenting with AI tools lately and it\u2019s amazing how much they can automate in daily work.&lt;/p&gt;\n\n&lt;p&gt;For example, I\u2019m using:\n- AI to summarize meeting notes\n- AI to draft emails or blog outlines\n- AI to categorize and sort support tickets&lt;/p&gt;\n\n&lt;p&gt;I feel like there are so many other useful AI tools I might be missing.&lt;/p&gt;\n&lt;/div&gt;&lt;!-- SC_ON --&gt;", "likes": null, "suggested_sort": null, "banned_at_utc": null, "view_count": null, "archived": false, "no_follow": false, "is_crosspostable": false, "pinned": false, "over_18": false, "all_awardings": [], "awarders": [], "media_only": false, "can_gild": false, "spoiler": false, "locked": false, "author_flair_text": null, "treatment_tags": [], "visited": false, "removed_by": null, "num_reports": null, "distinguished": null, "subreddit_id": "t5_2qrbn", "author_is_blocked": false, "mod_reason_by": null, "removal_reason": null, "link_flair_background_color": "", "id": "1rmdnvk", "is_robot_indexable": true, "report_reasons": null, "author": "SMBowner_", "discussion_type": null, "num_comments": 63, "send_replies": true, "contest_mode": false, "mod_reports": [], "author_patreon_flair": false, "author_flair_text_color": null, "permalink": "/r/automation/comments/1rmdnvk/what_ai_tool_became_part_of_your_daily_workflow/", "stickied": false, "url": "https://www.reddit.com/r/automation/comments/1rmdnvk/what_ai_tool_became_part_of_your_daily_workflow/", "subreddit_subscribers": 190711, "created_utc": 1772802868.0, "num_crossposts": 0, "media": null, "is_video": false, "author_icon_url": "https://styles.redditmedia.com/t5_g6oobm/styles/profileIcon_h3bzqif9mv8g1.jpeg"}, {"approved_at_utc": null, "subreddit": "automation", "selftext": "Trying to build my outreach list but hitting a wall. I need to get contact info from linkedin profiles but don\u2019t have budget for sales navigator or other tools right now. I\u2019ve heard people mention native linkedin features but not sure what that even means or if they actually work. anyone here managed to do this without spending money or is that just wishful thinking.", "author_fullname": "t2_249in5yv4u", "saved": false, "mod_reason_title": null, "gilded": 0, "clicked": false, "title": "Struggling to extract linkedin contacts without paying for premium tools", "link_flair_richtext": [], "subreddit_name_prefixed": "r/automation", "hidden": false, "pwls": 6, "link_flair_css_class": null, "downs": 0, "thumbnail_height": null, "top_awarded_type": null, "hide_score": false, "name": "t3_1rn32q8", "quarantine": false, "link_flair_text_color": "dark", "upvote_ratio": 0.97, "author_flair_background_color": null, "subreddit_type": "public", "ups": 32, "total_awards_received": 0, "media_embed": {}, "thumbnail_width": null, "author_flair_template_id": null, "is_original_content": false, "user_reports": [], "secure_media": null, "is_reddit_media_domain": false, "is_meta": false, "category": null, "secure_media_embed": {}, "link_flair_text": null, "can_mod_post": false, "score": 32, "approved_by": null, "is_created_from_ads_ui": false, "author_premium": false, "thumbnail": "self", "edited": false, "author_flair_css_class": null, "author_flair_richtext": [], "gildings": {}, "content_categories": null, "is_self": true, "mod_note": null, "created": 1772866312.0, "link_flair_type": "text", "wls": 6, "removed_by_category": null, "banned_by": null, "author_flair_type": "text", "domain": "self.automation", "allow_live_comments": false, "selftext_html": "&lt;!-- SC_OFF --&gt;&lt;div class=\"md\"&gt;&lt;p&gt;Trying to build my outreach list but hitting a wall. I need to get contact info from linkedin profiles but don\u2019t have budget for sales navigator or other tools right now. I\u2019ve heard people mention native linkedin features but not sure what that even means or if they actually work. anyone here managed to do this without spending money or is that just wishful thinking.&lt;/p&gt;\n&lt;/div&gt;&lt;!-- SC_ON --&gt;", "likes": null, "suggested_sort": null, "banned_at_utc": null, "view_count": null, "archived": false, "no_follow": false, "is_crosspostable": false, "pinned": false, "over_18": false, "all_awardings": [], "awarders": [], "media_only": false, "can_gild": false, "spoiler": false, "locked": false, "author_flair_text": null, "treatment_tags": [], "visited": false, "removed_by": null, "num_reports": null, "distinguished": null, "subreddit_id": "t5_2qrbn", "author_is_blocked": false, "mod_reason_by": null, "removal_reason": null, "link_flair_background_color": "", "id": "1rn32q8", "is_robot_indexable": true, "report_reasons": null, "author": "GiggleBiscut", "discussion_type": null, "num_comments": 24, "send_replies": true, "contest_mode": false, "mod_reports": [], "author_patreon_flair": false, "author_flair_text_color": null, "permalink": "/r/automation/comments/1rn32q8/struggling_to_extract_linkedin_contacts_without/", "stickied": false, "url": "https://www.reddit.com/r/automation/comments/1rn32q8/struggling_to_extract_linkedin_contacts_without/", "subreddit_subscribers": 190711, "created_utc": 1772866312.0, "num_crossposts": 0, "media": null, "is_video": false, "author_icon_url": "https://i.redd.it/snoovatar/avatars/0f5cb809-af36-427b-8380-3832e4780740-headshot.png"}, {"approved_at_utc": null, "subreddit": "automation", "selftext": "It feels like every team is automating something different- lead capture, outreach, internal workflows, reporting, content, customer support, etc. Some people are going all-in on automation while others seem to keep things pretty lean with just a few core tools.\n\nFor those running agencies, SaaS, or small teams, I\u2019m especially interested in how your stack actually fits together in practice. So curious, what\u2019s your full automation stack for you and your team?", "author_fullname": "t2_1adei417il", "saved": false, "mod_reason_title": null, "gilded": 0, "clicked": false, "title": "Experts here, what\u2019s your full automation stack for you and your team?", "link_flair_richtext": [], "subreddit_name_prefixed": "r/automation", "hidden": false, "pwls": 6, "link_flair_css_class": null, "downs": 0, "thumbnail_height": null, "top_awarded_type": null, "hide_score": false, "name": "t3_1rpsxw4", "quarantine": false, "link_flair_text_color": "dark", "upvote_ratio": 0.97, "author_flair_background_color": null, "subreddit_type": "public", "ups": 34, "total_awards_received": 0, "media_embed": {}, "thumbnail_width": null, "author_flair_template_id": null, "is_original_content": false, "user_reports": [], "secure_media": null, "is_reddit_media_domain": false, "is_meta": false, "category": null, "secure_media_embed": {}, "link_flair_text": null, "can_mod_post": false, "score": 34, "approved_by": null, "is_created_from_ads_ui": false, "author_premium": false, "thumbnail": "self", "edited": false, "author_flair_css_class": null, "author_flair_richtext": [], "gildings": {}, "content_categories": null, "is_self": true, "mod_note": null, "created": 1773137319.0, "link_flair_type": "text", "wls": 6, "removed_by_category": null, "banned_by": null, "author_flair_type": "text", "domain": "self.automation", "allow_live_comments": false, "selftext_html": "&lt;!-- SC_OFF --&gt;&lt;div class=\"md\"&gt;&lt;p&gt;It feels like every team is automating something different- lead capture, outreach, internal workflows, reporting, content, customer support, etc. Some people are going all-in on automation while others seem to keep things pretty lean with just a few core tools.&lt;/p&gt;\n\n&lt;p&gt;For those running agencies, SaaS, or small teams, I\u2019m especially interested in how your stack actually fits together in practice. So curious, what\u2019s your full automation stack for you and your team?&lt;/p&gt;\n&lt;/div&gt;&lt;!-- SC_ON --&gt;", "likes": null, "suggested_sort": null, "banned_at_utc": null, "view_count": null, "archived": false, "no_follow": false, "is_crosspostable": false, "pinned": false, "over_18": false, "all_awardings": [], "awarders": [], "media_only": false, "can_gild": false, "spoiler": false, "locked": false, "author_flair_text": null, "treatment_tags": [], "visited": false, "removed_by": null, "num_reports": null, "distinguished": null, "subreddit_id": "t5_2qrbn", "author_is_blocked": false, "mod_reason_by": null, "removal_reason": null, "link_flair_background_color": "", "id": "1rpsxw4", "is_robot_indexable": true, "report_reasons": null, "author": "Particular-Will1833", "discussion_type": null, "num_comments": 21, "send_replies": true, "contest_mode": false, "mod_reports": [], "author_patreon_flair": false, "author_flair_text_color": null, "permalink": "/r/automation/comments/1rpsxw4/experts_here_whats_your_full_automation_stack_for/", "stickied": false, "url": "https://www.reddit.com/r/automation/comments/1rpsxw4/experts_here_whats_your_full_automation_stack_for/", "subreddit_subscribers": 190711, "created_utc": 1773137319.0, "num_crossposts": 0, "media": null, "is_video": false, "author_icon_url": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_5.png"}, {"approved_at_utc": null, "subreddit": "automation", "selftext": "If you had to start from scratch today, what would be the first automation you\u2019d build?\n\nSomething that immediately saves time or improves a workflow.\n\nCould be:\n\nEmail automation  \nData collection  \nTask management  \nLead tracking  \nAI assistants\n\nCurious what people consider the highest ROI automation right now.", "author_fullname": "t2_4ri2ts026", "saved": false, "mod_reason_title": null, "gilded": 0, "clicked": false, "title": "What\u2019s the First Automation You\u2019d Build If You Had to Start From Zero Today?", "link_flair_richtext": [], "subreddit_name_prefixed": "r/automation", "hidden": false, "pwls": 6, "link_flair_css_class": null, "downs": 0, "thumbnail_height": null, "top_awarded_type": null, "hide_score": false, "name": "t3_1rn7fu2", "quarantine": false, "link_flair_text_color": "dark", "upvote_ratio": 0.93, "author_flair_background_color": null, "subreddit_type": "public", "ups": 21, "total_awards_received": 0, "media_embed": {}, "thumbnail_width": null, "author_flair_template_id": null, "is_original_content": false, "user_reports": [], "secure_media": null, "is_reddit_media_domain": false, "is_meta": false, "category": null, "secure_media_embed": {}, "link_flair_text": null, "can_mod_post": false, "score": 21, "approved_by": null, "is_created_from_ads_ui": false, "author_premium": false, "thumbnail": "self", "edited": false, "author_flair_css_class": null, "author_flair_richtext": [], "gildings": {}, "content_categories": null, "is_self": true, "mod_note": null, "created": 1772881933.0, "link_flair_type": "text", "wls": 6, "removed_by_category": null, "banned_by": null, "author_flair_type": "text", "domain": "self.automation", "allow_live_comments": false, "selftext_html": "&lt;!-- SC_OFF --&gt;&lt;div class=\"md\"&gt;&lt;p&gt;If you had to start from scratch today, what would be the first automation you\u2019d build?&lt;/p&gt;\n\n&lt;p&gt;Something that immediately saves time or improves a workflow.&lt;/p&gt;\n\n&lt;p&gt;Could be:&lt;/p&gt;\n\n&lt;p&gt;Email automation&lt;br/&gt;\nData collection&lt;br/&gt;\nTask management&lt;br/&gt;\nLead tracking&lt;br/&gt;\nAI assistants&lt;/p&gt;\n\n&lt;p&gt;Curious what people consider the highest ROI automation right now.&lt;/p&gt;\n&lt;/div&gt;&lt;!-- SC_ON --&gt;", "likes": null, "suggested_sort": null, "banned_at_utc": null, "view_count": null, "archived": false, "no_follow": false, "is_crosspostable": false, "pinned": false, "over_18": false, "all_awardings": [], "awarders": [], "media_only": false, "can_gild": false, "spoiler": false, "locked": false, "author_flair_text": null, "treatment_tags": [], "visited": false, "removed_by": null, "num_reports": null, "distinguished": null, "subreddit_id": "t5_2qrbn", "author_is_blocked": false, "mod_reason_by": null, "removal_reason": null, "link_flair_background_color": "", "id": "1rn7fu2", "is_robot_indexable": true, "report_reasons": null, "author": "Alpertayfur", "discussion_type": null, "num_comments": 32, "send_replies": true, "contest_mode": false, "mod_reports": [], "author_patreon_flair": false, "author_flair_text_color": null, "permalink": "/r/automation/comments/1rn7fu2/whats_the_first_automation_youd_build_if_you_had/", "stickied": false, "url": "https://www.reddit.com/r/automation/comments/1rn7fu2/whats_the_first_automation_youd_build_if_you_had/", "subreddit_subscribers": 190711, "created_utc": 1772881933.0, "num_crossposts": 0, "media": null, "is_video": false, "author_icon_url": "https://styles.redditmedia.com/t5_7xums7/styles/profileIcon_snoo9851080b-7698-4d8b-9443-40e59ec09206-headshot.png"}, {"approved_at_utc": null, "subreddit": "automation", "selftext": "I\u2019m trying to reduce manual work around bookings.\n\nRight now the flow is messy:  \nmessages \u2192 checking calendar \u2192 confirming availability \u2192 updating inventory.\n\nIt works when volume is small, but once requests increase the manual checks start taking too much time.\n\nFor people who automated booking workflows:\n\nWhat stack or automation setup are you using?\n\nIs it a custom script, Zapier-style workflow, or a dedicated system?\n\nCurious what actually works in practice.", "author_fullname": "t2_vvpd37qk", "saved": false, "mod_reason_title": null, "gilded": 0, "clicked": false, "title": "What\u2019s the cleanest way to automate booking availability?", "link_flair_richtext": [], "subreddit_name_prefixed": "r/automation", "hidden": false, "pwls": 6, "link_flair_css_class": null, "downs": 0, "thumbnail_height": null, "top_awarded_type": null, "hide_score": false, "name": "t3_1roijqb", "quarantine": false, "link_flair_text_color": "dark", "upvote_ratio": 1.0, "author_flair_background_color": null, "subreddit_type": "public", "ups": 19, "total_awards_received": 0, "media_embed": {}, "thumbnail_width": null, "author_flair_template_id": null, "is_original_content": false, "user_reports": [], "secure_media": null, "is_reddit_media_domain": false, "is_meta": false, "category": null, "secure_media_embed": {}, "link_flair_text": null, "can_mod_post": false, "score": 19, "approved_by": null, "is_created_from_ads_ui": false, "author_premium": false, "thumbnail": "self", "edited": false, "author_flair_css_class": null, "author_flair_richtext": [], "gildings": {}, "content_categories": null, "is_self": true, "mod_note": null, "created": 1773008905.0, "link_flair_type": "text", "wls": 6, "removed_by_category": null, "banned_by": null, "author_flair_type": "text", "domain": "self.automation", "allow_live_comments": false, "selftext_html": "&lt;!-- SC_OFF --&gt;&lt;div class=\"md\"&gt;&lt;p&gt;I\u2019m trying to reduce manual work around bookings.&lt;/p&gt;\n\n&lt;p&gt;Right now the flow is messy:&lt;br/&gt;\nmessages \u2192 checking calendar \u2192 confirming availability \u2192 updating inventory.&lt;/p&gt;\n\n&lt;p&gt;It works when volume is small, but once requests increase the manual checks start taking too much time.&lt;/p&gt;\n\n&lt;p&gt;For people who automated booking workflows:&lt;/p&gt;\n\n&lt;p&gt;What stack or automation setup are you using?&lt;/p&gt;\n\n&lt;p&gt;Is it a custom script, Zapier-style workflow, or a dedicated system?&lt;/p&gt;\n\n&lt;p&gt;Curious what actually works in practice.&lt;/p&gt;\n&lt;/div&gt;&lt;!-- SC_ON --&gt;", "likes": null, "suggested_sort": null, "banned_at_utc": null, "view_count": null, "archived": false, "no_follow": false, "is_crosspostable": false, "pinned": false, "over_18": false, "all_awardings": [], "awarders": [], "media_only": false, "can_gild": false, "spoiler": false, "locked": false, "author_flair_text": null, "treatment_tags": [], "visited": false, "removed_by": null, "num_reports": null, "distinguished": null, "subreddit_id": "t5_2qrbn", "author_is_blocked": false, "mod_reason_by": null, "removal_reason": null, "link_flair_background_color": "", "id": "1roijqb", "is_robot_indexable": true, "report_reasons": null, "author": "DexHelpl", "discussion_type": null, "num_comments": 20, "send_replies": true, "contest_mode": false, "mod_reports": [], "author_patreon_flair": false, "author_flair_text_color": null, "permalink": "/r/automation/comments/1roijqb/whats_the_cleanest_way_to_automate_booking/", "stickied": false, "url": "https://www.reddit.com/r/automation/comments/1roijqb/whats_the_cleanest_way_to_automate_booking/", "subreddit_subscribers": 190711, "created_utc": 1773008905.0, "num_crossposts": 0, "media": null, "is_video": false, "author_icon_url": "https://www.redditstatic.com/avatars/defaults/v2/avatar_default_4.png"}]};
+
+        // Custom config to match requested design Tabs
+        const TOPICS_CONFIG = {
+            'n8n': { label: 'Comunidade n8n' },
+            'automation': { label: 'Automation' }
+        };
+
+        const navTabs = document.getElementById('navTabs');
+        const listsContainer = document.getElementById('listsContainer');
+        const topMenu = document.getElementById('topMenu');
+        
+        let subreddits = Object.keys(redditData);
+        let activeSub = null;
+
+        // Selection mode state variables
+        let isSelectionMode = false;
+        let selectedPosts = new Set(); 
+
+        function initApp() {
+            if (subreddits.length === 0) return;
+
+            subreddits.forEach((sub, index) => {
+                const config = TOPICS_CONFIG[sub] || { label: sub.toUpperCase() };
+                
+                // 1. Create Tab Element
+                const tabBtn = document.createElement('div');
+                tabBtn.className = `tab ${index === 0 ? 'active' : ''}`;
+                tabBtn.textContent = config.label;
+                tabBtn.onclick = () => switchTab(sub, tabBtn);
+                navTabs.appendChild(tabBtn);
+
+                // 2. Create actual List Container for posts under this tab
+                const listEl = document.createElement('div');
+                listEl.id = `list-${sub}`;
+                listEl.className = `post-list ${index === 0 ? 'active' : ''}`;
+                
+                const posts = redditData[sub];
+
+                if (!posts || posts.length === 0) {
+                    listEl.innerHTML = `<div style="text-align:center; padding-top: 40px; color: #94a3b8; font-size:1.2rem; font-weight:700; grid-column: 1/-1;">Nenhum conteúdo encontrado.</div>`;
+                } else {
+                    posts.forEach((post, i) => {
+                        const title = (post.title || 'Post sem título').replace(/\n/g, ' ');
+                        const score = post.score || 0;
+                        const comments = post.num_comments || 0;
+                        const permalink = `https://www.reddit.com${post.permalink || ''}`;
+                        const author = post.author || 'anon';
+                        
+                        // Extract Avatar
+                        let avatarUrl = post.author_icon_url;
+                        if (!avatarUrl) {
+                            avatarUrl = `https://i.pravatar.cc/150?u=${encodeURIComponent(author)}&size=150`;
+                        }
+                        const fallbackImg = `https://i.pravatar.cc/150?u=${encodeURIComponent(author)}&size=150`;
+                        const imgError = `this.onerror=null;this.src='${fallbackImg}';`;
+
+                        // Select Rank logic
+                        const rankNum = i + 1;
+                        const rankClass = rankNum <= 5 ? `rank-${rankNum}` : `rank-other`;
+
+                        // Prevent string breaks in HTML
+                        const safeTitle = title.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+                        
+                        // Faux "Followed" stat for design parity
+                        const followedStat = Math.floor(Math.random() * 200) + 50;
+
+                        // Check if Post Has Image to display above text
+                        let postImageHtml = '';
+                        let postImageUrl = null;
+                        
+                        if (post.thumbnail && post.thumbnail.startsWith('http')) {
+                            postImageUrl = post.thumbnail;
+                        } else if (post.url && (post.url.endsWith('.jpg') || post.url.endsWith('.png') || post.url.endsWith('.gif'))) {
+                            postImageUrl = post.url;
+                        } else if (post.preview && post.preview.images && post.preview.images.length > 0) {
+                            postImageUrl = post.preview.images[0].source.url.replace(/&amp;/g, '&');
+                        }
+
+                        if (postImageUrl) {
+                            postImageHtml = `
+                                <div class="post-image-wrapper">
+                                    <img src="${postImageUrl}" alt="Post Image">
+                                </div>
+                            `;
+                        }
+
+                        listEl.innerHTML += `
+                            <a href="${permalink}" target="_blank" data-url="${permalink}" data-title="${safeTitle}" data-author="${author}" 
+                               class="card ${rankClass}" 
+                               onclick="handleCardInteraction(event, this)">
+                                
+                                <div class="card-shape"></div>
+                                
+                                ${postImageHtml}
+                                
+                                <div class="card-content">
+                                    <div class="avatar-col">
+                                        <img src="${avatarUrl}" onerror="${imgError}" alt="Author Avatar">
+                                    </div>
+                                    
+                                    <div class="info-col">
+                                        <div class="author-name">${author}</div>
+                                        <div class="post-title" title="${safeTitle}">Título: ${title}</div>
+                                        
+                                        <div class="stats-row">
+                                            <div class="stat-item">
+                                                <span class="stat-value">${score}</span>
+                                                <span class="stat-label">Popularity</span>
+                                            </div>
+                                            <div class="stat-item">
+                                                <span class="stat-value">${comments}</span>
+                                                <span class="stat-label">Like</span>
+                                            </div>
+                                            <div class="stat-item">
+                                                <span class="stat-value">${followedStat}</span>
+                                                <span class="stat-label">Followed</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="rank-col" title="Top Post Ranking">
+                                        <div class="rank-dots">...</div>
+                                        <div class="rank-number">${rankNum}</div>
+                                        <div class="rank-label">Ranking</div>
+                                    </div>
+                                </div>
+                            </a>
+                        `;
+                    });
+                }
+                
+                listsContainer.appendChild(listEl);
+            });
+
+            activeSub = subreddits[0];
+        }
+
+        function switchTab(sub, btnElement) {
+            if (activeSub === sub) return;
+
+            document.querySelectorAll('.tab').forEach(btn => btn.classList.remove('active'));
+            btnElement.classList.add('active');
+
+            document.querySelectorAll('.post-list').forEach(list => list.classList.remove('active'));
+            document.getElementById(`list-${sub}`).classList.add('active');
+
+            activeSub = sub;
+            cancelSelection(); // Always cancel mode on tab switch
+        }
+
+        // ---------- Top Menu Logic ----------
+        function toggleMenu(e) {
+            e.stopPropagation();
+            topMenu.classList.toggle('active');
+        }
+        document.addEventListener('click', () => {
+             topMenu.classList.remove('active');
+        });
+        topMenu.addEventListener('click', (e) => e.stopPropagation());
+
+        // ---------- Fetch Backend / Refresh Data ----------
+        async function refreshData() {
+            topMenu.classList.remove('active');
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.add('active');
+
+            try {
+                const response = await fetch('/api/refresh', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error("Erro no servidor");
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    window.location.reload();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (err) {
+                console.error("Refresh fallhou:", err);
+                alert("Não foi possível conectar com o python (server.py). Verifique se ele está rodando.");
+                overlay.classList.remove('active');
+            }
+        }
+
+        // ---------- Multi-Select Email Logic ----------
+        function activateSelectionMode() {
+            topMenu.classList.remove('active');
+            isSelectionMode = true;
+            selectedPosts.clear();
+            
+            document.getElementById('selectionBar').classList.add('active');
+            
+            document.querySelectorAll('.card').forEach(c => {
+                c.classList.add('selectable');
+                c.classList.remove('selected');
+                c.removeAttribute('target');    // Remove generic target when selectable
+            });
+            updateSelCount();
+        }
+
+        function cancelSelection() {
+            isSelectionMode = false;
+            document.getElementById('selectionBar').classList.remove('active');
+            
+            document.querySelectorAll('.card').forEach(c => {
+                c.classList.remove('selectable', 'selected');
+                c.setAttribute('target', '_blank'); // Give back target normal mode
+            });
+        }
+
+        function handleCardInteraction(event, cardEl) {
+            if (!isSelectionMode) {
+                // If not in mode, let default `href` click navigate to reddit normally
+                return;
+            }
+            
+            // Prevention of default navigation when Select Mode active
+            event.preventDefault();
+            
+            const url = cardEl.getAttribute('data-url');
+            
+            if (selectedPosts.has(url)) {
+                selectedPosts.delete(url);
+                cardEl.classList.remove('selected');
+            } else {
+                selectedPosts.add(url);
+                cardEl.classList.add('selected');
+            }
+            updateSelCount();
+        }
+
+        function updateSelCount() {
+            const count = selectedPosts.size;
+            document.getElementById('selCount').innerText = count;
+            document.getElementById('btnSendCount').innerText = count;
+        }
+
+        // ---------- Toast Notifications ----------
+        function showToast(message, type="info", persistent=false) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = 'fa-circle-info';
+            if(type === 'success') icon = 'fa-circle-check';
+            if(type === 'error') icon = 'fa-circle-xmark';
+            if(type === 'info' && persistent) icon = 'fa-spinner fa-spin';
+
+            toast.innerHTML = `<i class="fa-solid ${icon}" style="font-size: 1.4rem;"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            if(!persistent) {
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            }
+            return toast; // return element to allow manual removal
+        }
+
+        // ---------- Config Modal Logic ----------
+        function openEmailConfig() {
+            topMenu.classList.remove('active');
+            const savedEmail = localStorage.getItem('ope_target_email') || '';
+            document.getElementById('targetEmailInput').value = savedEmail;
+            document.getElementById('emailModal').classList.add('active');
+        }
+
+        function closeEmailConfig(e) {
+            // Se e existe e foi clicado no overlay bg
+            if(e && e.target !== document.getElementById('emailModal')) return; 
+            document.getElementById('emailModal').classList.remove('active');
+        }
+
+        function saveEmailConfig() {
+            const val = document.getElementById('targetEmailInput').value.trim();
+            if(val) {
+                localStorage.setItem('ope_target_email', val);
+                document.getElementById('emailModal').classList.remove('active');
+                showToast("E-mail " + val + " salvo com sucesso!", "success");
+            } else {
+                showToast("Por favor insira um e-mail válido.", "error");
+            }
+        }
+
+        async function sendSelectedEmail() {
+            if (selectedPosts.size === 0) {
+                showToast("Por favor selecione pelo menos um post para enviar o email!", "error");
+                return;
+            }
+            
+            const targetEmail = localStorage.getItem('ope_target_email') || '';
+            if(!targetEmail) {
+                showToast("Você precisa configurar seu e-mail de destino primeiro!", "error");
+                openEmailConfig();
+                return;
+            }
+
+            // Construindo o e-mail em formato HTML profissional (Estilo Credit Pros)
+            let htmlBody = `
+            <div style="font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background-color: #fffaf5; padding: 40px 20px; color: #333;">
+                <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+                    
+                    <!-- Header Secao -->
+                    <div style="background: linear-gradient(135deg, #f97316, #fb923c); padding: 35px 20px; text-align: center;">
+                        <h1 style="color: white; margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 0.5px;">💡 Destaques AutomateHub</h1>
+                        <p style="color: #fff7ed; margin-top: 8px; font-size: 15px;">Os melhores insights de automação que você pescou no Reddit.</p>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div style="padding: 30px 20px;">
+                        <h2 style="text-align: center; color: #1e293b; font-size: 20px; margin-bottom: 25px;">Seus posts favoritos:</h2>
+            `;
+            
+            document.querySelectorAll('.card.selected').forEach(card => {
+                const title = card.getAttribute('data-title');
+                const author = card.getAttribute('data-author');
+                const url = card.getAttribute('data-url');
+                const imgEl = card.querySelector('.post-image');
+                const avatarEl = card.querySelector('.avatar');
+                
+                let imageUrl = '';
+                if (imgEl && imgEl.hasAttribute('src')) {
+                    imageUrl = imgEl.src;
+                } else if (avatarEl && avatarEl.hasAttribute('src')) {
+                    imageUrl = avatarEl.src;
+                }
+
+                htmlBody += `
+                        <!-- Post Card (Estetica Credit Pros com Sombras e Botoes Laranjas) -->
+                        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 25px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+                            ${imageUrl ? '<img src="' + imageUrl + '" style="width: 100%; height: 220px; object-fit: cover; border-bottom: 1px solid #e2e8f0;" alt="Imagem do Post">' : ''}
+                            <div style="padding: 24px;">
+                                <div style="font-size: 12px; font-weight: bold; color: #f97316; text-transform: uppercase; margin-bottom: 8px;">POR: ${author}</div>
+                                <h3 style="margin: 0 0 16px 0; font-size: 18px; color: #0f172a; line-height: 1.4;">${title}</h3>
+                                <div style="text-align: left;">
+                                    <a href="${url}" style="display: inline-block; background-color: #f97316; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 25px; font-weight: bold; font-size: 14px; text-align: center; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);">Ler Post Completo &rarr;</a>
+                                </div>
+                            </div>
+                        </div>
+                `;
+            });
+            
+            htmlBody += `
+                    </div>
+                    
+                    <!-- Footer Info -->
+                    <div style="background-color: #f1f5f9; padding: 24px; text-align: center; border-top: 1px solid #e2e8f0; font-size: 13px; color: #64748b;">
+                        <p style="margin: 0; font-weight: bold;">AutomateHub Dashboard &copy; 2026</p>
+                        <p style="margin: 5px 0 0 0;">Automação de Captura e Envio de E-mails via n8n e Python</p>
+                    </div>
+                </div>
+            </div>
+            `;
+            
+            const subject = "Posts e Insights que selecionei direto do Reddit";
+            
+            const loadingToast = showToast("Enviando e-mail, por favor aguarde...", "info", true);
+
+            try {
+                // Using EmailJS for backend-less SMTP delivery avoiding App Passwords
+                const templateParams = {
+                    to_email: targetEmail,
+                    from_name: "AutomateHub",
+                    subject: subject,
+                    message: htmlBody
+                };
+
+                // Using User's Service ID and custom template
+                const response = await emailjs.send('service_hww88v9', 'template_l0olb4n', templateParams);
+
+                loadingToast.classList.remove('show');
+                setTimeout(() => loadingToast.remove(), 300);
+
+                if (response.status === 200) {
+                    showToast("E-mail enviado com sucesso!", "success");
+                    cancelSelection();
+                } else {
+                    throw new Error("Resposta estranha da API");
+                }
+            } catch (err) {
+                console.error("EmailJS failed:", err);
+                loadingToast.classList.remove('show');
+                setTimeout(() => loadingToast.remove(), 300);
+                showToast("Erro ao enviar! O serviço de e-mail limitou o teste. Crie uma key no site deles.", "error");
+            }
+        }
+
+        // Boot Main
+        initApp();
+    </script>
+</body>
+</html>
